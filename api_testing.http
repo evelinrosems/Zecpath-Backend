@@ -1,0 +1,18 @@
+### 1. Job List API - GET
+GET http://127.0.0.1:8000/api/jobs/
+Accept: application/json
+
+### 2. Job Create API - POST
+POST http://127.0.0.1:8000/api/jobs/create/
+Content-Type: application/json
+
+{
+    "title": "Business Analyst",
+    "company": "Zecser Business LLP",
+    "description": "Business analysis internship"
+}
+
+### 3. User Test API - GET
+GET http://127.0.0.1:8000/api/user-test/
+Accept: application/json
+
