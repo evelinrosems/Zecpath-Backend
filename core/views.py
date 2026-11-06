@@ -1,7 +1,7 @@
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Job
+from .services.job_service import get_all_jobs
 from .serializers import JobSerializer
 
 def home(request):
@@ -12,7 +12,7 @@ def home(request):
 class JobListAPIView(APIView):
 
     def get(self, request):
-        jobs = Job.objects.all()
+        jobs = get_all_jobs()
         serializer = JobSerializer(jobs, many=True)
         return Response(serializer.data)
 
