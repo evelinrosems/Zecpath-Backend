@@ -1,12 +1,25 @@
 
 from django.db import models
+from django.conf import settings
+
 
 class UserRole(models.TextChoices):
     ADMIN = 'ADMIN', 'Admin'
     EMPLOYER = 'EMPLOYER', 'Employer'
     CANDIDATE = 'CANDIDATE', 'Candidate'
 
+
 class User(models.Model):
+
+    # Connect Django login user with core user
+    auth_user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='core_user',
+        null=True,
+        blank=True
+    )
+
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=15, blank=True)
@@ -25,6 +38,7 @@ class User(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class Employer(models.Model):
     user = models.OneToOneField(
