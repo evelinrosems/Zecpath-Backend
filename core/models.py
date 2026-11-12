@@ -49,6 +49,12 @@ class Employer(models.Model):
     company_name = models.CharField(max_length=150)
     company_description = models.TextField(blank=True)
 
+    # Day 11 - Employer Profile Fields
+    domain = models.CharField(max_length=150, blank=True)
+    company_size = models.CharField(max_length=50, blank=True)
+    is_verified = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+
     def __str__(self):
         return self.company_name
 
@@ -62,6 +68,17 @@ class Candidate(models.Model):
     phone = models.CharField(max_length=15, blank=True)
     skills = models.TextField(blank=True)
     resume = models.CharField(max_length=255, blank=True)
+
+    # Day 11 - Candidate Profile Fields
+    education = models.TextField(blank=True)
+    experience = models.TextField(blank=True)
+    expected_salary = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True
+    )
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.user.name

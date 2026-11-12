@@ -1,9 +1,14 @@
-
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from .models import Job, User as CoreUser, UserRole
+from .models import (
+    Job,
+    Employer,
+    Candidate,
+    User as CoreUser,
+    UserRole
+)
 
 AuthUser = get_user_model()
 
@@ -13,7 +18,29 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = '__all__'
 
+class CandidateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Candidate
+        fields = [
+            'id',
+            'phone',
+            'skills',
+            'resume',
+            'education',
+            'experience',
+            'expected_salary',
+        ]
 
+class EmployerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Employer
+        fields = [
+            'id',
+            'company_name',
+            'company_description',
+            'domain',
+            'company_size',
+        ]
 class SignupSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100)
     email = serializers.EmailField()

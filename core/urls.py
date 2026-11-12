@@ -43,6 +43,18 @@ urlpatterns = [
         name='signup'
     ),
 
+        # Profile APIs
+    path(
+        'api/profiles/candidate/',
+        views.CandidateProfileAPIView.as_view(),
+        name='candidate-profile'
+    ),
+    path(
+        'api/profiles/employer/',
+        views.EmployerProfileAPIView.as_view(),
+        name='employer-profile'
+    ),
+
     # JWT APIs
     path(
         'api/token/',

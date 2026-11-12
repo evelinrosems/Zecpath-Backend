@@ -1,6 +1,6 @@
 
 from django.shortcuts import get_object_or_404
-from .models import Application, Job
+from .models import (Application,Job,Candidate,Employer,UserRole,User as CoreUser)
 from django.http import JsonResponse
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,7 +11,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from .permissions import IsEmployer, IsCandidate
 
 from .services.job_service import get_all_jobs
-from .serializers import JobSerializer, SignupSerializer
+from .serializers import (JobSerializer,SignupSerializer,CandidateSerializer,EmployerSerializer)
 
 
 def home(request):
@@ -96,7 +96,137 @@ class CandidateApplyAPIView(APIView):
             },
             status=status.HTTP_201_CREATED
         )
+class EmployerProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get_profile_owner(self, request):
+        core_user = getattr(request.user, "core_user", None)
+
+        if core_user is None:
+            return None, Response(
+                {"error": "User profile not found."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Admin can access another employer's profile
+        if core_user.role == UserRole.ADMIN:
+            user_id = request.query_params.get('user_id')
+
+            if not user_id:
+                return None, Response(
+                    {"error": "Admin must provide user_id."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            target_user = get_object_or_404(CoreUser, id=user_id)
+
+            if target_user.role != UserRole.EMPLOYER:
+                return None, Response(
+                    {"error": "Selected user is not an employer."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            return target_user, None
+
+        # Employer can access only their own profile
+        if core_user.role != UserRole.EMPLOYER:
+            return None, Response(
+                {"error": "Only employers or admins can access this profile."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return core_user, None
+
+    def get(self, request):
+        target_user, error = self.get_profile_owner(request)
+
+        if error:
+            return error
+
+        profile = get_object_or_404(
+            Employer,
+            user=target_user,
+            is_deleted=False
+        )
+
+        serializer = EmployerSerializer(profile)
+        return Response(serializer.data)
+
+    def post(self, request):
+        core_user = getattr(request.user, "core_user", None)
+
+        if core_user is None or core_user.role != UserRole.EMPLOYER:
+            return Response(
+                {"error": "Only employers can create their own profile."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if Employer.objects.filter(user=core_user).exists():
+            return Response(
+                {"error": "Employer profile already exists."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = EmployerSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=core_user)
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def put(self, request):
+        target_user, error = self.get_profile_owner(request)
+
+        if error:
+            return error
+
+        profile = get_object_or_404(
+            Employer,
+            user=target_user,
+            is_deleted=False
+        )
+
+        serializer = EmployerSerializer(
+            profile,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def delete(self, request):
+        target_user, error = self.get_profile_owner(request)
+
+        if error:
+            return error
+
+        profile = get_object_or_404(
+            Employer,
+            user=target_user,
+            is_deleted=False
+        )
+
+        profile.is_deleted = True
+        profile.save()
+
+        return Response(
+            {"message": "Employer profile deleted successfully."},
+            status=status.HTTP_200_OK
+        )
 class SignupAPIView(APIView):
     permission_classes = [AllowAny]
 
@@ -118,7 +248,137 @@ class SignupAPIView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+class CandidateProfileAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get_profile_owner(self, request):
+        core_user = getattr(request.user, "core_user", None)
+
+        if core_user is None:
+            return None, Response(
+                {"error": "User profile not found."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Admin can access another candidate's profile
+        if core_user.role == UserRole.ADMIN:
+            user_id = request.query_params.get('user_id')
+
+            if not user_id:
+                return None, Response(
+                    {"error": "Admin must provide user_id."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            target_user = get_object_or_404(CoreUser, id=user_id)
+
+            if target_user.role != UserRole.CANDIDATE:
+                return None, Response(
+                    {"error": "Selected user is not a candidate."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            return target_user, None
+
+        # Candidate can access only their own profile
+        if core_user.role != UserRole.CANDIDATE:
+            return None, Response(
+                {"error": "Only candidates or admins can access this profile."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return core_user, None
+
+    def get(self, request):
+        target_user, error = self.get_profile_owner(request)
+
+        if error:
+            return error
+
+        profile = get_object_or_404(
+            Candidate,
+            user=target_user,
+            is_deleted=False
+        )
+
+        serializer = CandidateSerializer(profile)
+        return Response(serializer.data)
+
+    def post(self, request):
+        core_user = getattr(request.user, "core_user", None)
+
+        if core_user is None or core_user.role != UserRole.CANDIDATE:
+            return Response(
+                {"error": "Only candidates can create their own profile."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if Candidate.objects.filter(user=core_user).exists():
+            return Response(
+                {"error": "Candidate profile already exists."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = CandidateSerializer(data=request.data)
+
+        if serializer.is_valid():
+            serializer.save(user=core_user)
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def put(self, request):
+        target_user, error = self.get_profile_owner(request)
+
+        if error:
+            return error
+
+        profile = get_object_or_404(
+            Candidate,
+            user=target_user,
+            is_deleted=False
+        )
+
+        serializer = CandidateSerializer(
+            profile,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    def delete(self, request):
+        target_user, error = self.get_profile_owner(request)
+
+        if error:
+            return error
+
+        profile = get_object_or_404(
+            Candidate,
+            user=target_user,
+            is_deleted=False
+        )
+
+        profile.is_deleted = True
+        profile.save()
+
+        return Response(
+            {"message": "Candidate profile deleted successfully."},
+            status=status.HTTP_200_OK
+        )
 
 class LogoutAPIView(APIView):
     permission_classes = [IsAuthenticated]
