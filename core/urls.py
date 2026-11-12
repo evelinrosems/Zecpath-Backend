@@ -1,6 +1,8 @@
 
 from django.urls import path
 from . import views
+from django.conf import settings
+from django.conf.urls.static import static
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -50,6 +52,11 @@ urlpatterns = [
         name='candidate-profile'
     ),
     path(
+    'api/profiles/candidate/resume/',
+    views.CandidateResumeUploadAPIView.as_view(),
+    name='candidate-resume-upload'
+    ),
+    path(
         'api/profiles/employer/',
         views.EmployerProfileAPIView.as_view(),
         name='employer-profile'
@@ -72,3 +79,9 @@ urlpatterns = [
         name='logout'
     ),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT
+    )

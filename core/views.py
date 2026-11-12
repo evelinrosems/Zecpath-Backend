@@ -12,7 +12,7 @@ from .permissions import IsEmployer, IsCandidate
 
 from .services.job_service import get_all_jobs
 from .serializers import (JobSerializer,SignupSerializer,CandidateSerializer,EmployerSerializer)
-
+from rest_framework.parsers import MultiPartParser, FormParser
 
 def home(request):
     return JsonResponse({
@@ -60,6 +60,7 @@ class UserTestAPIView(APIView):
         })
     
 class CandidateApplyAPIView(APIView):
+    
     permission_classes = [IsCandidate]
 
     def post(self, request):
@@ -248,9 +249,11 @@ class SignupAPIView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+
+    
 class CandidateProfileAPIView(APIView):
     permission_classes = [IsAuthenticated]
-
+    parser_classes = [MultiPartParser, FormParser]
     def get_profile_owner(self, request):
         core_user = getattr(request.user, "core_user", None)
 
@@ -378,6 +381,42 @@ class CandidateProfileAPIView(APIView):
         return Response(
             {"message": "Candidate profile deleted successfully."},
             status=status.HTTP_200_OK
+        )
+
+
+class CandidateResumeUploadAPIView(CandidateProfileAPIView):
+
+    def post(self, request):
+        target_user, error = self.get_profile_owner(request)
+
+        if error:
+            return error
+
+        profile = get_object_or_404(
+            Candidate,
+            user=target_user,
+            is_deleted=False
+        )
+
+        serializer = CandidateSerializer(
+            profile,
+            data=request.data,
+            partial=True
+        )
+         
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {
+                    "message": "Resume uploaded successfully.",
+                    "resume": serializer.data.get('resume')
+                },
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
         )
 
 class LogoutAPIView(APIView):

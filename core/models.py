@@ -67,7 +67,7 @@ class Candidate(models.Model):
     )
     phone = models.CharField(max_length=15, blank=True)
     skills = models.TextField(blank=True)
-    resume = models.CharField(max_length=255, blank=True)
+    resume = models.FileField(upload_to='resumes/',blank=True,null=True)
 
     # Day 11 - Candidate Profile Fields
     education = models.TextField(blank=True)

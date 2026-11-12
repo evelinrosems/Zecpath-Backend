@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
+import os
+from rest_framework import serializers
 
 from .models import (
     Job,
@@ -18,9 +20,52 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = '__all__'
 
+
+
 class CandidateSerializer(serializers.ModelSerializer):
+
+    def validate_resume(self, value):
+        allowed_extensions = ['.pdf', '.doc', '.docx']
+
+        extension = os.path.splitext(value.name)[1].lower()
+
+        if extension not in allowed_extensions:
+            raise serializers.ValidationError(
+                "Only PDF, DOC and DOCX files are allowed."
+            )
+
+        max_size = 5 * 1024 * 1024
+
+        if value.size > max_size:
+            raise serializers.ValidationError(
+                "Resume file size cannot exceed 5 MB."
+            )
+
+        return value
+
+    def update(self, instance, validated_data):
+        old_resume = instance.resume
+        new_resume = validated_data.get('resume')
+
+        if new_resume and old_resume:
+            if old_resume.name != new_resume.name:
+                old_resume.delete(save=False)
+
+        return super().update(instance, validated_data)
+
     class Meta:
         model = Candidate
+        fields = [
+            'id',
+            'phone',
+            'skills',
+            'resume',
+            'education',
+            'experience',
+            'expected_salary',
+        ]
+
+
         fields = [
             'id',
             'phone',
